@@ -47,19 +47,12 @@ function MainApp() {
       console.log('IndexedDB initialized');
 
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.register('/sw.js');
-        console.log('Service Worker registered:', registration);
-
-        navigator.serviceWorker.addEventListener('message', (event) => {
-          if (event.data?.type === 'SW_UPDATED') {
-            if (confirm('New version available! Reload to update?')) {
-              window.location.reload();
-            }
-          }
+        navigator.serviceWorker.register('/sw.js').then(registration => {
+          console.log('Service Worker registered:', registration);
+        }).catch(error => {
+          console.log('Service Worker registration failed:', error);
         });
       }
-
-      syncManager.startAutoSync(30000);
     } catch (error) {
       console.error('App initialization error:', error);
     }

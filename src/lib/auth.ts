@@ -75,5 +75,5 @@ export async function requestLocationPermission(userId: string) {
 export async function checkUserRole(userId: string, allowedRoles: UserRole[]): Promise<boolean> {
   const profile = await getUserProfile(userId);
   if (!profile) return false;
-  return allowedRoles.includes(profile.role);
+  return allowedRoles.includes(profile.new_role);
 }

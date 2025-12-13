@@ -30,13 +30,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        getUserProfile(session.user.id).then(setProfile).catch(console.error);
+    const initAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setUser(session?.user ?? null);
+
+        if (session?.user) {
+          try {
+            const userProfile = await getUserProfile(session.user.id);
+            setProfile(userProfile);
+          } catch (error) {
+            console.error('Error fetching profile:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
+    };
+
+    initAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       (async () => {
@@ -47,11 +61,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setProfile(userProfile);
           } catch (error) {
             console.error('Error fetching profile:', error);
+            setProfile(null);
           }
         } else {
           setProfile(null);
         }
-        setLoading(false);
       })();
     });
 

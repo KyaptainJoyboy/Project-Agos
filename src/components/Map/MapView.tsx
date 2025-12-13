@@ -74,10 +74,7 @@ export function MapView() {
 
     loadMapData();
 
-    const intervalId = setInterval(loadMapData, 30000);
-
     return () => {
-      clearInterval(intervalId);
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
@@ -97,11 +94,15 @@ export function MapView() {
   }, [layers]);
 
   const loadMapData = async () => {
-    await Promise.all([
-      loadEvacuationCenters(),
-      loadFloodMarkers(),
-      loadAlerts()
-    ]);
+    try {
+      await Promise.all([
+        loadEvacuationCenters().catch(e => console.error('Error loading centers:', e)),
+        loadFloodMarkers().catch(e => console.error('Error loading flood markers:', e)),
+        loadAlerts().catch(e => console.error('Error loading alerts:', e))
+      ]);
+    } catch (error) {
+      console.error('Error loading map data:', error);
+    }
   };
 
   const handleMapClick = (lat: number, lng: number) => {

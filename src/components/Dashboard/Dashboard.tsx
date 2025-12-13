@@ -38,17 +38,15 @@ export function Dashboard() {
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 30000);
-    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
     try {
       await Promise.all([
-        loadCenters(),
-        loadAlerts(),
-        loadWeather(),
-        loadStats()
+        loadCenters().catch(e => console.error('Error loading centers:', e)),
+        loadAlerts().catch(e => console.error('Error loading alerts:', e)),
+        loadWeather().catch(e => console.error('Error loading weather:', e)),
+        loadStats().catch(e => console.error('Error loading stats:', e))
       ]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);

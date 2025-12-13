@@ -42,31 +42,13 @@ export function SettingsView() {
     if (!user) return;
 
     try {
-      if (!locationPermission) {
-        const permission = await navigator.permissions.query({ name: 'geolocation' as PermissionName });
-        if (permission.state === 'denied') {
-          alert('Location permission is blocked. Please enable it in your browser settings.');
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          async () => {
-            await updateUserProfile(user.id, { location_permission_granted: true });
-            setLocationPermission(true);
-            await refreshProfile();
-          },
-          (error) => {
-            alert('Failed to get location. Please try again.');
-            console.error('Geolocation error:', error);
-          }
-        );
-      } else {
-        await updateUserProfile(user.id, { location_permission_granted: false });
-        setLocationPermission(false);
-        await refreshProfile();
-      }
+      const newValue = !locationPermission;
+      await updateUserProfile(user.id, { location_permission_granted: newValue });
+      setLocationPermission(newValue);
+      await refreshProfile();
     } catch (error) {
       console.error('Error updating location permission:', error);
+      alert('Failed to update location setting');
     }
   };
 
@@ -75,20 +57,12 @@ export function SettingsView() {
 
     try {
       const newValue = !notificationsEnabled;
-
-      if (newValue && 'Notification' in window) {
-        const permission = await Notification.requestPermission();
-        if (permission !== 'granted') {
-          alert('Notification permission denied');
-          return;
-        }
-      }
-
       await updateUserProfile(user.id, { notification_enabled: newValue });
       setNotificationsEnabled(newValue);
       await refreshProfile();
     } catch (error) {
       console.error('Error updating notifications:', error);
+      alert('Failed to update notification setting');
     }
   };
 
@@ -154,7 +128,7 @@ export function SettingsView() {
                 <MapPin className="w-5 h-5 text-slate-600" />
                 <div>
                   <p className="font-medium text-slate-900">Location Access</p>
-                  <p className="text-sm text-slate-600">Enable to show your position and get routes</p>
+                  <p className="text-sm text-slate-600">Enable map location features</p>
                 </div>
               </div>
               <button
@@ -176,7 +150,7 @@ export function SettingsView() {
                 <Bell className="w-5 h-5 text-slate-600" />
                 <div>
                   <p className="font-medium text-slate-900">Notifications</p>
-                  <p className="text-sm text-slate-600">Receive alerts and updates</p>
+                  <p className="text-sm text-slate-600">Enable alert notifications</p>
                 </div>
               </div>
               <button
