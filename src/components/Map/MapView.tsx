@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Layers, MapPin, X, Navigation, AlertCircle, RefreshCw, Locate } from 'lucide-react';
+import { Layers, MapPin, X, Navigation, AlertCircle, RefreshCw, Locate, Shield } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { calculateRoute, findNearestEvacuationCenter } from '../../lib/routingService';
+import { useAuth } from '../../App';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -22,6 +23,7 @@ interface MapLayer {
 }
 
 export function MapView() {
+  const { isAdmin } = useAuth();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [showLayerControl, setShowLayerControl] = useState(false);
@@ -341,10 +343,19 @@ export function MapView() {
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      <div className="absolute top-4 left-4 right-4 z-[1000] flex gap-2">
+      {isAdmin && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1001] bg-amber-500 text-white px-3 py-1 rounded-full shadow-lg flex items-center gap-1.5 text-xs font-bold">
+          <Shield className="w-3 h-3" />
+          ADMIN VIEW
+        </div>
+      )}
+
+      <div className="absolute top-4 left-4 right-4 z-[1000] flex gap-2" style={{ marginTop: isAdmin ? '32px' : '0' }}>
         <button
           onClick={() => setShowLayerControl(!showLayerControl)}
-          className="bg-white px-3 py-2 rounded-lg shadow-md border border-slate-200 flex items-center gap-2 font-medium text-slate-700 text-sm"
+          className={`px-3 py-2 rounded-lg shadow-md border flex items-center gap-2 font-medium text-sm ${
+            isAdmin ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-700'
+          }`}
         >
           <Layers className="w-4 h-4" />
           Layers
@@ -353,7 +364,9 @@ export function MapView() {
         <button
           onClick={() => setClickMode(!clickMode)}
           className={`px-3 py-2 rounded-lg shadow-md flex items-center gap-2 font-medium text-sm ${
-            clickMode ? 'bg-blue-600 text-white' : 'bg-white text-slate-700 border border-slate-200'
+            clickMode
+              ? (isAdmin ? 'bg-amber-600 text-white' : 'bg-blue-600 text-white')
+              : (isAdmin ? 'bg-slate-800 border border-slate-700 text-white' : 'bg-white text-slate-700 border border-slate-200')
           }`}
         >
           <MapPin className="w-4 h-4" />
@@ -363,7 +376,9 @@ export function MapView() {
         <button
           onClick={getCurrentLocation}
           disabled={gettingLocation}
-          className="bg-white px-3 py-2 rounded-lg shadow-md border border-slate-200 flex items-center gap-2 font-medium text-slate-700 text-sm"
+          className={`px-3 py-2 rounded-lg shadow-md border flex items-center gap-2 font-medium text-sm ${
+            isAdmin ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-700'
+          }`}
         >
           <Locate className={`w-4 h-4 ${gettingLocation ? 'animate-pulse' : ''}`} />
         </button>
@@ -371,35 +386,41 @@ export function MapView() {
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="bg-white p-2 rounded-lg shadow-md border border-slate-200 ml-auto"
+          className={`p-2 rounded-lg shadow-md border ml-auto ${
+            isAdmin ? 'bg-slate-800 border-slate-700 text-white' : 'bg-white border-slate-200 text-slate-700'
+          }`}
         >
-          <RefreshCw className={`w-4 h-4 text-slate-700 ${isRefreshing ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
         </button>
       </div>
 
       {showLayerControl && (
-        <div className="absolute top-16 left-4 z-[1000] bg-white rounded-lg shadow-lg border border-slate-200 p-3 min-w-[180px]">
-          <h3 className="font-semibold text-slate-900 mb-2 text-sm">Map Layers</h3>
+        <div className={`absolute left-4 z-[1000] rounded-lg shadow-lg border p-3 min-w-[180px] ${
+          isAdmin ? 'top-20 bg-slate-800 border-slate-700' : 'top-16 bg-white border-slate-200'
+        }`} style={{ marginTop: isAdmin ? '32px' : '0' }}>
+          <h3 className={`font-semibold mb-2 text-sm ${isAdmin ? 'text-white' : 'text-slate-900'}`}>Map Layers</h3>
           {layers.map(layer => (
             <label key={layer.id} className="flex items-center gap-2 py-1.5 cursor-pointer">
               <input
                 type="checkbox"
                 checked={layer.enabled}
                 onChange={() => toggleLayer(layer.id)}
-                className="w-4 h-4 text-blue-600 rounded"
+                className={`w-4 h-4 rounded ${isAdmin ? 'text-amber-600' : 'text-blue-600'}`}
               />
               <div className="w-3 h-3 rounded-full" style={{ backgroundColor: layer.color }} />
-              <span className="text-sm text-slate-700">{layer.name}</span>
+              <span className={`text-sm ${isAdmin ? 'text-slate-300' : 'text-slate-700'}`}>{layer.name}</span>
             </label>
           ))}
         </div>
       )}
 
       {userLocation && (
-        <div className="absolute bottom-24 left-4 right-4 z-[1000] bg-white rounded-xl shadow-lg border border-slate-200 p-4">
+        <div className={`absolute bottom-24 left-4 right-4 z-[1000] rounded-xl shadow-lg border p-4 ${
+          isAdmin ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'
+        }`}>
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-slate-900">Route Navigation</h3>
-            <button onClick={clearRoute} className="text-slate-500 hover:text-slate-700">
+            <h3 className={`font-bold ${isAdmin ? 'text-white' : 'text-slate-900'}`}>Route Navigation</h3>
+            <button onClick={clearRoute} className={isAdmin ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700'}>
               <X className="w-5 h-5" />
             </button>
           </div>
@@ -408,7 +429,9 @@ export function MapView() {
             <button
               onClick={calculateRouteToNearest}
               disabled={isRouting}
-              className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+              className={`w-full py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 disabled:opacity-50 ${
+                isAdmin ? 'bg-amber-600 text-white' : 'bg-blue-600 text-white'
+              }`}
             >
               {isRouting ? (
                 <>
@@ -425,37 +448,43 @@ export function MapView() {
           )}
 
           {routeInfo && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm font-bold text-blue-900 mb-1">{routeInfo.destination}</p>
-              <div className="flex gap-4 text-xs text-blue-700">
+            <div className={`rounded-lg p-3 border ${
+              isAdmin ? 'bg-amber-500/10 border-amber-500/30' : 'bg-blue-50 border-blue-200'
+            }`}>
+              <p className={`text-sm font-bold mb-1 ${isAdmin ? 'text-amber-300' : 'text-blue-900'}`}>{routeInfo.destination}</p>
+              <div className={`flex gap-4 text-xs ${isAdmin ? 'text-amber-200' : 'text-blue-700'}`}>
                 <span>Distance: {routeInfo.distance < 1000 ? `${routeInfo.distance}m` : `${(routeInfo.distance/1000).toFixed(1)}km`}</span>
                 <span>ETA: {routeInfo.duration} min</span>
               </div>
-              <p className="text-xs text-blue-600 mt-2">Route avoids active flood zones</p>
+              <p className={`text-xs mt-2 ${isAdmin ? 'text-amber-400' : 'text-blue-600'}`}>Route avoids active flood zones</p>
             </div>
           )}
         </div>
       )}
 
       {clickMode && (
-        <div className="absolute bottom-24 left-4 right-4 z-[1000] bg-blue-50 border-2 border-blue-500 rounded-xl p-4 animate-pulse">
+        <div className={`absolute bottom-24 left-4 right-4 z-[1000] rounded-xl p-4 border-2 animate-pulse ${
+          isAdmin ? 'bg-amber-500/10 border-amber-500' : 'bg-blue-50 border-blue-500'
+        }`}>
           <div className="flex gap-3">
-            <MapPin className="w-5 h-5 text-blue-600 flex-shrink-0" />
+            <MapPin className={`w-5 h-5 flex-shrink-0 ${isAdmin ? 'text-amber-400' : 'text-blue-600'}`} />
             <div>
-              <p className="text-sm font-bold text-blue-900">Tap anywhere on the map</p>
-              <p className="text-xs text-blue-700">Set your location to get evacuation routes</p>
+              <p className={`text-sm font-bold ${isAdmin ? 'text-amber-300' : 'text-blue-900'}`}>Tap anywhere on the map</p>
+              <p className={`text-xs ${isAdmin ? 'text-amber-200' : 'text-blue-700'}`}>Set your location to get evacuation routes</p>
             </div>
           </div>
         </div>
       )}
 
       {!userLocation && !clickMode && (
-        <div className="absolute bottom-24 left-4 right-4 z-[1000] bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div className={`absolute bottom-24 left-4 right-4 z-[1000] rounded-xl p-4 border ${
+          isAdmin ? 'bg-slate-800 border-slate-700' : 'bg-amber-50 border-amber-200'
+        }`}>
           <div className="flex gap-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <AlertCircle className={`w-5 h-5 flex-shrink-0 ${isAdmin ? 'text-slate-400' : 'text-amber-600'}`} />
             <div>
-              <p className="text-sm font-medium text-amber-900">Location Not Set</p>
-              <p className="text-xs text-amber-700">Tap "Set Location" or use GPS to get evacuation routes.</p>
+              <p className={`text-sm font-medium ${isAdmin ? 'text-white' : 'text-amber-900'}`}>Location Not Set</p>
+              <p className={`text-xs ${isAdmin ? 'text-slate-400' : 'text-amber-700'}`}>Tap "Set Location" or use GPS to get evacuation routes.</p>
             </div>
           </div>
         </div>
