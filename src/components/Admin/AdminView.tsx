@@ -9,8 +9,6 @@ import {
   Plus,
   Trash2,
   Edit,
-  Save,
-  X,
   Activity,
   Home,
   RefreshCw,
@@ -20,6 +18,17 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useAuth } from '../../App';
 import { supabase, FloodMarker, AdminAlert, WeatherCondition } from '../../lib/supabase';
+import {
+  Modal,
+  Input,
+  Textarea,
+  Select,
+  Checkbox,
+  FormButtons,
+  StatCard,
+  QuickAction,
+  StatusBadge
+} from './AdminComponents';
 
 type AdminTab = 'overview' | 'centers' | 'floods' | 'alerts' | 'weather';
 
@@ -37,8 +46,54 @@ interface EvacuationCenter {
 
 const TUGUEGARAO_CENTER: [number, number] = [17.6132, 121.7270];
 
+const TABS = [
+  { id: 'overview' as const, label: 'Overview', icon: Activity },
+  { id: 'centers' as const, label: 'Centers', icon: Home },
+  { id: 'floods' as const, label: 'Floods', icon: MapPin },
+  { id: 'alerts' as const, label: 'Alerts', icon: Bell },
+  { id: 'weather' as const, label: 'Weather', icon: Cloud }
+];
+
+const SEVERITY_OPTIONS = [
+  { value: '1', label: '1 - Minor' },
+  { value: '2', label: '2 - Low' },
+  { value: '3', label: '3 - Moderate' },
+  { value: '4', label: '4 - High' },
+  { value: '5', label: '5 - Critical' }
+];
+
+const STATUS_OPTIONS = [
+  { value: 'operational', label: 'Operational' },
+  { value: 'full', label: 'Full' },
+  { value: 'closed', label: 'Closed' },
+  { value: 'emergency', label: 'Emergency' }
+];
+
+const ALERT_TYPE_OPTIONS = [
+  { value: 'general', label: 'General' },
+  { value: 'flood', label: 'Flood' },
+  { value: 'weather', label: 'Weather' },
+  { value: 'evacuation', label: 'Evacuation' },
+  { value: 'emergency', label: 'Emergency' }
+];
+
+const ALERT_SEVERITY_OPTIONS = [
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
+  { value: 'critical', label: 'Critical' }
+];
+
+const WEATHER_CONDITIONS = [
+  { value: 'normal', label: 'Normal', risk: 1, desc: 'Clear skies' },
+  { value: 'light_rain', label: 'Light Rain', risk: 2, desc: 'Minor rainfall' },
+  { value: 'heavy_rain', label: 'Heavy Rain', risk: 3, desc: 'Significant rainfall' },
+  { value: 'storm', label: 'Storm', risk: 4, desc: 'Severe weather' },
+  { value: 'typhoon', label: 'Typhoon', risk: 5, desc: 'Extreme conditions' }
+];
+
 export function AdminView() {
-  const { profile, user, isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [floodMarkers, setFloodMarkers] = useState<FloodMarker[]>([]);
   const [centers, setCenters] = useState<EvacuationCenter[]>([]);
@@ -53,7 +108,6 @@ export function AdminView() {
   const [showCenterForm, setShowCenterForm] = useState(false);
   const [editingFlood, setEditingFlood] = useState<FloodMarker | null>(null);
   const [editingCenter, setEditingCenter] = useState<EvacuationCenter | null>(null);
-
   const [selectedLocation, setSelectedLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const mapRef = useRef<L.Map | null>(null);
@@ -95,7 +149,7 @@ export function AdminView() {
     });
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OSM',
+      attribution: '',
       maxZoom: 19,
     }).addTo(map);
 
@@ -353,7 +407,7 @@ export function AdminView() {
       await supabase.from('weather_conditions').update({ is_active: false }).eq('id', weather.id);
     }
 
-    const floodRiskMap: { [key: string]: number } = {
+    const floodRiskMap: Record<string, number> = {
       'normal': 1, 'light_rain': 2, 'heavy_rain': 3, 'storm': 4, 'typhoon': 5
     };
 
@@ -402,57 +456,53 @@ export function AdminView() {
   }
 
   return (
-    <div className="flex flex-col h-full pb-16 overflow-y-auto bg-slate-50">
-      <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-5">
+    <div className="flex flex-col h-full pb-16 overflow-hidden bg-slate-50">
+      <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-white/10 rounded-full">
+            <div className="p-2 bg-white/10 rounded-full">
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Admin Panel</h1>
-              <p className="text-slate-300 text-xs">Manage AGOS System</p>
+              <h1 className="text-lg font-bold">Admin Panel</h1>
+              <p className="text-slate-400 text-xs">Manage AGOS System</p>
             </div>
           </div>
           <button
             onClick={handleRefresh}
             disabled={refreshing}
-            className="p-2 bg-white/10 rounded-lg hover:bg-white/20"
+            className="p-2.5 bg-white/10 rounded-lg hover:bg-white/20 active:bg-white/30"
           >
             <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      <div className="flex gap-2 p-3 overflow-x-auto bg-white border-b border-slate-200 sticky top-0 z-10">
-        {[
-          { id: 'overview' as AdminTab, label: 'Overview', icon: Activity },
-          { id: 'centers' as AdminTab, label: 'Centers', icon: Home },
-          { id: 'floods' as AdminTab, label: 'Floods', icon: MapPin },
-          { id: 'alerts' as AdminTab, label: 'Alerts', icon: Bell },
-          { id: 'weather' as AdminTab, label: 'Weather', icon: Cloud }
-        ].map(tab => {
+      <div className="flex gap-1.5 p-2 overflow-x-auto bg-white border-b border-slate-200 flex-shrink-0">
+        {TABS.map(tab => {
           const Icon = tab.icon;
           return (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-medium whitespace-nowrap text-sm ${
-                activeTab === tab.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
+              className={`flex items-center gap-1.5 px-3 py-2.5 rounded-lg font-medium whitespace-nowrap text-sm transition-colors ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-100 text-slate-600 active:bg-slate-200'
               }`}
             >
               <Icon className="w-4 h-4" />
-              {tab.label}
+              <span className="hidden xs:inline">{tab.label}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="p-4 flex-1">
+      <div className="flex-1 overflow-y-auto p-4">
         {activeTab === 'overview' && (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              <StatCard icon={Users} value={stats.users} label="Users" color="blue" />
+              <StatCard icon={Users} value={stats.users} label="Total Users" color="blue" />
               <StatCard icon={Home} value={stats.centers} label="Centers" color="green" />
               <StatCard icon={AlertTriangle} value={stats.activeFloodMarkers} label="Flood Zones" color="orange" />
               <StatCard icon={Bell} value={stats.activeAlerts} label="Alerts" color="red" />
@@ -461,11 +511,16 @@ export function AdminView() {
             {weather && (
               <div className="bg-white rounded-xl p-4 border border-slate-200">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Cloud className="w-5 h-5 text-blue-600" />
-                    <span className="font-semibold capitalize">{weather.condition_type.replace('_', ' ')}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                      <Cloud className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500">Current Weather</p>
+                      <p className="font-semibold capitalize">{weather.condition_type.replace('_', ' ')}</p>
+                    </div>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold ${
+                  <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
                     weather.flood_risk_level >= 4 ? 'bg-red-100 text-red-700' :
                     weather.flood_risk_level >= 3 ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'
                   }`}>
@@ -478,7 +533,7 @@ export function AdminView() {
             <div className="bg-white rounded-xl p-4 border border-slate-200">
               <h3 className="font-bold text-slate-900 mb-3">Quick Actions</h3>
               <div className="grid grid-cols-2 gap-2">
-                <QuickAction icon={MapPin} label="Add Flood" color="orange" onClick={() => { setActiveTab('floods'); setShowFloodForm(true); }} />
+                <QuickAction icon={MapPin} label="Add Flood Zone" color="orange" onClick={() => { setActiveTab('floods'); setShowFloodForm(true); }} />
                 <QuickAction icon={Home} label="Add Center" color="green" onClick={() => { setActiveTab('centers'); setShowCenterForm(true); }} />
                 <QuickAction icon={Bell} label="New Alert" color="red" onClick={() => { setActiveTab('alerts'); setShowAlertForm(true); }} />
                 <QuickAction icon={Cloud} label="Set Weather" color="blue" onClick={() => setActiveTab('weather')} />
@@ -491,30 +546,48 @@ export function AdminView() {
           <div className="space-y-3">
             <button
               onClick={() => setShowCenterForm(true)}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+              className="w-full bg-green-600 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 active:bg-green-700"
             >
               <Plus className="w-5 h-5" />
-              Add Center
+              Add Evacuation Center
             </button>
 
-            {centers.map(center => (
-              <div key={center.id} className="bg-white rounded-xl p-4 border border-slate-200">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-bold text-slate-900">{center.name}</h3>
-                    <p className="text-sm text-slate-600">{center.address}</p>
-                  </div>
-                  <StatusBadge status={center.status} />
-                </div>
-                <div className="text-sm text-slate-600 mb-3">
-                  Capacity: {center.capacity_current}/{center.capacity_max}
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => { setEditingCenter(center); setShowCenterForm(true); }} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium">Edit</button>
-                  <button onClick={() => handleDeleteCenter(center.id)} className="px-3 py-2 bg-red-600 text-white rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                </div>
+            {centers.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <Home className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                <p>No evacuation centers yet</p>
               </div>
-            ))}
+            ) : (
+              centers.map(center => (
+                <div key={center.id} className="bg-white rounded-xl p-4 border border-slate-200">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-slate-900 truncate">{center.name}</h3>
+                      <p className="text-sm text-slate-500 truncate">{center.address}</p>
+                    </div>
+                    <StatusBadge status={center.status} />
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
+                    <span>Capacity: {center.capacity_current}/{center.capacity_max}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => { setEditingCenter(center); setShowCenterForm(true); }}
+                      className="flex-1 py-2.5 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-1.5 active:bg-blue-700"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteCenter(center.id)}
+                      className="px-4 py-2.5 bg-red-600 text-white rounded-lg active:bg-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
@@ -522,36 +595,62 @@ export function AdminView() {
           <div className="space-y-3">
             <button
               onClick={() => setShowFloodForm(true)}
-              className="w-full bg-orange-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+              className="w-full bg-orange-600 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 active:bg-orange-700"
             >
               <Plus className="w-5 h-5" />
               Add Flood Zone
             </button>
 
-            {floodMarkers.map(marker => (
-              <div key={marker.id} className="bg-white rounded-xl p-4 border border-slate-200">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="font-bold text-slate-900">{marker.name}</h3>
-                    <p className="text-sm text-slate-600">{marker.description}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${marker.is_active ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
-                    {marker.is_active ? 'Active' : 'Off'}
-                  </span>
-                </div>
-                <div className="flex gap-2 text-sm text-slate-600 mb-3">
-                  <span>Severity: {marker.severity}/5</span>
-                  <span>Radius: {marker.radius_meters}m</span>
-                </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleToggleFloodMarker(marker.id, marker.is_active)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${marker.is_active ? 'bg-slate-200 text-slate-700' : 'bg-green-600 text-white'}`}>
-                    {marker.is_active ? 'Deactivate' : 'Activate'}
-                  </button>
-                  <button onClick={() => { setEditingFlood(marker); setShowFloodForm(true); }} className="px-3 py-2 bg-blue-600 text-white rounded-lg"><Edit className="w-4 h-4" /></button>
-                  <button onClick={() => handleDeleteFloodMarker(marker.id)} className="px-3 py-2 bg-red-600 text-white rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                </div>
+            {floodMarkers.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <MapPin className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                <p>No flood zones marked</p>
               </div>
-            ))}
+            ) : (
+              floodMarkers.map(marker => (
+                <div key={marker.id} className="bg-white rounded-xl p-4 border border-slate-200">
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-bold text-slate-900 truncate">{marker.name}</h3>
+                      <p className="text-sm text-slate-500 line-clamp-1">{marker.description}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                      marker.is_active ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {marker.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-slate-600 mb-3">
+                    <span>Severity: {marker.severity}/5</span>
+                    <span>Radius: {marker.radius_meters}m</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleToggleFloodMarker(marker.id, marker.is_active)}
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium ${
+                        marker.is_active
+                          ? 'bg-slate-100 text-slate-700 active:bg-slate-200'
+                          : 'bg-green-600 text-white active:bg-green-700'
+                      }`}
+                    >
+                      {marker.is_active ? 'Deactivate' : 'Activate'}
+                    </button>
+                    <button
+                      onClick={() => { setEditingFlood(marker); setShowFloodForm(true); }}
+                      className="px-4 py-2.5 bg-blue-600 text-white rounded-lg active:bg-blue-700"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteFloodMarker(marker.id)}
+                      className="px-4 py-2.5 bg-red-600 text-white rounded-lg active:bg-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
@@ -559,65 +658,84 @@ export function AdminView() {
           <div className="space-y-3">
             <button
               onClick={() => setShowAlertForm(true)}
-              className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold flex items-center justify-center gap-2"
+              className="w-full bg-red-600 text-white py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 active:bg-red-700"
             >
               <Plus className="w-5 h-5" />
               Create Alert
             </button>
 
-            {alerts.map(alert => (
-              <div key={alert.id} className={`rounded-xl p-4 border-2 ${
-                alert.severity === 'critical' ? 'bg-red-50 border-red-400' :
-                alert.severity === 'high' ? 'bg-orange-50 border-orange-400' :
-                alert.severity === 'medium' ? 'bg-amber-50 border-amber-400' : 'bg-blue-50 border-blue-400'
-              }`}>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase text-white ${
-                    alert.severity === 'critical' ? 'bg-red-600' :
-                    alert.severity === 'high' ? 'bg-orange-600' :
-                    alert.severity === 'medium' ? 'bg-amber-600' : 'bg-blue-600'
-                  }`}>{alert.severity}</span>
-                  <span className="text-xs text-slate-600 uppercase">{alert.alert_type}</span>
-                  <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium ${alert.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-600'}`}>
-                    {alert.is_active ? 'Live' : 'Off'}
-                  </span>
-                </div>
-                <h3 className="font-bold text-slate-900">{alert.title}</h3>
-                <p className="text-sm text-slate-700 mt-1">{alert.message}</p>
-                <div className="flex gap-2 mt-3">
-                  <button onClick={() => handleToggleAlert(alert.id, alert.is_active)} className={`flex-1 py-2 rounded-lg text-sm font-medium ${alert.is_active ? 'bg-slate-200 text-slate-700' : 'bg-green-600 text-white'}`}>
-                    {alert.is_active ? 'Turn Off' : 'Turn On'}
-                  </button>
-                  <button onClick={() => handleDeleteAlert(alert.id)} className="px-3 py-2 bg-red-600 text-white rounded-lg"><Trash2 className="w-4 h-4" /></button>
-                </div>
+            {alerts.length === 0 ? (
+              <div className="text-center py-8 text-slate-500">
+                <Bell className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                <p>No alerts created</p>
               </div>
-            ))}
+            ) : (
+              alerts.map(alert => (
+                <div key={alert.id} className={`rounded-xl p-4 border-2 ${
+                  alert.severity === 'critical' ? 'bg-red-50 border-red-300' :
+                  alert.severity === 'high' ? 'bg-orange-50 border-orange-300' :
+                  alert.severity === 'medium' ? 'bg-amber-50 border-amber-300' : 'bg-blue-50 border-blue-300'
+                }`}>
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold uppercase text-white ${
+                      alert.severity === 'critical' ? 'bg-red-600' :
+                      alert.severity === 'high' ? 'bg-orange-600' :
+                      alert.severity === 'medium' ? 'bg-amber-600' : 'bg-blue-600'
+                    }`}>{alert.severity}</span>
+                    <span className="text-xs text-slate-600 uppercase">{alert.alert_type}</span>
+                    <span className={`ml-auto px-2 py-0.5 rounded text-xs font-medium ${
+                      alert.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {alert.is_active ? 'Live' : 'Off'}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-slate-900">{alert.title}</h3>
+                  <p className="text-sm text-slate-700 mt-1 line-clamp-2">{alert.message}</p>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleToggleAlert(alert.id, alert.is_active)}
+                      className={`flex-1 py-2.5 rounded-lg text-sm font-medium ${
+                        alert.is_active
+                          ? 'bg-slate-200 text-slate-700 active:bg-slate-300'
+                          : 'bg-green-600 text-white active:bg-green-700'
+                      }`}
+                    >
+                      {alert.is_active ? 'Turn Off' : 'Turn On'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteAlert(alert.id)}
+                      className="px-4 py-2.5 bg-red-600 text-white rounded-lg active:bg-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
         {activeTab === 'weather' && (
           <div className="space-y-2">
-            {[
-              { value: 'normal', label: 'Normal', risk: 1, desc: 'Clear skies' },
-              { value: 'light_rain', label: 'Light Rain', risk: 2, desc: 'Minor rainfall' },
-              { value: 'heavy_rain', label: 'Heavy Rain', risk: 3, desc: 'Significant rainfall' },
-              { value: 'storm', label: 'Storm', risk: 4, desc: 'Severe weather' },
-              { value: 'typhoon', label: 'Typhoon', risk: 5, desc: 'Extreme conditions' }
-            ].map(c => (
+            <p className="text-sm text-slate-500 mb-3">Select current weather condition:</p>
+            {WEATHER_CONDITIONS.map(c => (
               <button
                 key={c.value}
                 onClick={() => handleUpdateWeather(c.value)}
-                className={`w-full text-left p-4 rounded-xl border-2 ${
-                  weather?.condition_type === c.value ? 'border-blue-500 bg-blue-50' : 'border-slate-200 bg-white'
+                className={`w-full text-left p-4 rounded-xl border-2 transition-colors ${
+                  weather?.condition_type === c.value
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-slate-200 bg-white active:bg-slate-50'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-bold">{c.label}</div>
-                    <div className="text-sm text-slate-600">{c.desc} - Risk: {c.risk}/5</div>
+                    <div className="font-bold text-slate-900">{c.label}</div>
+                    <div className="text-sm text-slate-600">{c.desc}</div>
+                    <div className="text-xs text-slate-500 mt-1">Flood Risk: {c.risk}/5</div>
                   </div>
                   {weather?.condition_type === c.value && (
-                    <span className="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded">ACTIVE</span>
+                    <span className="px-2.5 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg">ACTIVE</span>
                   )}
                 </div>
               </button>
@@ -630,45 +748,55 @@ export function AdminView() {
         <Modal title={editingFlood ? 'Edit Flood Zone' : 'Add Flood Zone'} onClose={closeFloodForm}>
           <form onSubmit={handleSaveFloodMarker} className="space-y-4">
             <Input label="Zone Name" name="name" defaultValue={editingFlood?.name} required placeholder="e.g., Downtown Flood Zone" />
-            <Textarea label="Description" name="description" defaultValue={editingFlood?.description} placeholder="Details..." />
+            <Textarea label="Description" name="description" defaultValue={editingFlood?.description} placeholder="Describe the flood zone..." />
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                <Map className="w-4 h-4 inline mr-1" />Location (click map)
+                <Map className="w-4 h-4 inline mr-1.5" />
+                Location (tap map to set)
               </label>
-              <div ref={mapContainerRef} className="w-full h-48 rounded-lg border border-slate-300" />
-              {selectedLocation && <p className="text-xs text-slate-600 mt-1">{selectedLocation.lat.toFixed(5)}, {selectedLocation.lng.toFixed(5)}</p>}
+              <div ref={mapContainerRef} className="w-full h-48 rounded-lg border border-slate-300 overflow-hidden" />
+              {selectedLocation && (
+                <p className="text-xs text-slate-500 mt-1.5">
+                  {selectedLocation.lat.toFixed(5)}, {selectedLocation.lng.toFixed(5)}
+                </p>
+              )}
               <input type="hidden" name="lat" value={selectedLocation?.lat || editingFlood?.location.lat || TUGUEGARAO_CENTER[0]} />
               <input type="hidden" name="lng" value={selectedLocation?.lng || editingFlood?.location.lng || TUGUEGARAO_CENTER[1]} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <Select label="Severity" name="severity" defaultValue={editingFlood?.severity || 3} options={[{v:'1',l:'1-Minor'},{v:'2',l:'2-Low'},{v:'3',l:'3-Moderate'},{v:'4',l:'4-High'},{v:'5',l:'5-Critical'}]} />
+              <Select label="Severity" name="severity" defaultValue={editingFlood?.severity || 3} options={SEVERITY_OPTIONS} />
               <Input label="Radius (m)" name="radius" type="number" defaultValue={editingFlood?.radius_meters || 100} required />
             </div>
-            <Checkbox label="Active (visible & affects routing)" name="is_active" defaultChecked={editingFlood?.is_active ?? true} />
-            <FormButtons onCancel={closeFloodForm} />
+            <Checkbox label="Active (visible on map & affects routing)" name="is_active" defaultChecked={editingFlood?.is_active ?? true} />
+            <FormButtons onCancel={closeFloodForm} color="orange" />
           </form>
         </Modal>
       )}
 
       {showCenterForm && (
-        <Modal title={editingCenter ? 'Edit Center' : 'Add Center'} onClose={closeCenterForm}>
+        <Modal title={editingCenter ? 'Edit Evacuation Center' : 'Add Evacuation Center'} onClose={closeCenterForm}>
           <form onSubmit={handleSaveCenter} className="space-y-4">
             <Input label="Center Name" name="name" defaultValue={editingCenter?.name} required placeholder="e.g., City Gymnasium" />
             <Input label="Address" name="address" defaultValue={editingCenter?.address} required placeholder="Full address" />
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                <Map className="w-4 h-4 inline mr-1" />Location (click map)
+                <Map className="w-4 h-4 inline mr-1.5" />
+                Location (tap map to set)
               </label>
-              <div ref={mapContainerRef} className="w-full h-48 rounded-lg border border-slate-300" />
-              {selectedLocation && <p className="text-xs text-slate-600 mt-1">{selectedLocation.lat.toFixed(5)}, {selectedLocation.lng.toFixed(5)}</p>}
+              <div ref={mapContainerRef} className="w-full h-48 rounded-lg border border-slate-300 overflow-hidden" />
+              {selectedLocation && (
+                <p className="text-xs text-slate-500 mt-1.5">
+                  {selectedLocation.lat.toFixed(5)}, {selectedLocation.lng.toFixed(5)}
+                </p>
+              )}
               <input type="hidden" name="lat" value={selectedLocation?.lat || editingCenter?.location.lat || TUGUEGARAO_CENTER[0]} />
               <input type="hidden" name="lng" value={selectedLocation?.lng || editingCenter?.location.lng || TUGUEGARAO_CENTER[1]} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <Input label="Max Capacity" name="capacity_max" type="number" defaultValue={editingCenter?.capacity_max || 100} required />
-              <Input label="Current" name="capacity_current" type="number" defaultValue={editingCenter?.capacity_current || 0} />
+              <Input label="Current Occupancy" name="capacity_current" type="number" defaultValue={editingCenter?.capacity_current || 0} />
             </div>
-            <Select label="Status" name="status" defaultValue={editingCenter?.status || 'operational'} options={[{v:'operational',l:'Operational'},{v:'full',l:'Full'},{v:'closed',l:'Closed'},{v:'emergency',l:'Emergency'}]} />
+            <Select label="Status" name="status" defaultValue={editingCenter?.status || 'operational'} options={STATUS_OPTIONS} />
             <div className="grid grid-cols-2 gap-3">
               <Input label="Contact Person" name="contact_person" defaultValue={editingCenter?.contact_person} placeholder="Name" />
               <Input label="Contact Number" name="contact_number" defaultValue={editingCenter?.contact_number} placeholder="Phone" />
@@ -682,105 +810,16 @@ export function AdminView() {
         <Modal title="Create Alert" onClose={() => setShowAlertForm(false)}>
           <form onSubmit={handleSaveAlert} className="space-y-4">
             <Input label="Alert Title" name="title" required placeholder="e.g., Flash Flood Warning" />
-            <Textarea label="Message" name="message" required placeholder="Detailed message..." rows={3} />
+            <Textarea label="Message" name="message" required placeholder="Enter detailed alert message..." rows={3} />
             <div className="grid grid-cols-2 gap-3">
-              <Select label="Type" name="alert_type" options={[{v:'general',l:'General'},{v:'flood',l:'Flood'},{v:'weather',l:'Weather'},{v:'evacuation',l:'Evacuation'},{v:'emergency',l:'Emergency'}]} />
-              <Select label="Severity" name="severity" options={[{v:'low',l:'Low'},{v:'medium',l:'Medium'},{v:'high',l:'High'},{v:'critical',l:'Critical'}]} />
+              <Select label="Alert Type" name="alert_type" options={ALERT_TYPE_OPTIONS} />
+              <Select label="Severity" name="severity" options={ALERT_SEVERITY_OPTIONS} />
             </div>
-            <Input label="Location Name (optional)" name="location_name" placeholder="e.g., Downtown" />
+            <Input label="Location Name (optional)" name="location_name" placeholder="e.g., Downtown Area" />
             <FormButtons onCancel={() => setShowAlertForm(false)} color="red" label="Send Alert" />
           </form>
         </Modal>
       )}
-    </div>
-  );
-}
-
-function StatCard({ icon: Icon, value, label, color }: { icon: any; value: number; label: string; color: string }) {
-  const colors: Record<string, string> = { blue: 'text-blue-600', green: 'text-green-600', orange: 'text-orange-600', red: 'text-red-600' };
-  return (
-    <div className="bg-white rounded-xl p-4 border border-slate-200">
-      <Icon className={`w-7 h-7 ${colors[color]} mb-1`} />
-      <div className="text-2xl font-bold text-slate-900">{value}</div>
-      <div className="text-xs text-slate-600">{label}</div>
-    </div>
-  );
-}
-
-function QuickAction({ icon: Icon, label, color, onClick }: { icon: any; label: string; color: string; onClick: () => void }) {
-  const colors: Record<string, string> = { blue: 'bg-blue-50 text-blue-700', green: 'bg-green-50 text-green-700', orange: 'bg-orange-50 text-orange-700', red: 'bg-red-50 text-red-700' };
-  return (
-    <button onClick={onClick} className={`flex items-center gap-2 p-3 rounded-lg font-medium text-sm ${colors[color]}`}>
-      <Icon className="w-4 h-4" />{label}
-    </button>
-  );
-}
-
-function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = { operational: 'bg-green-100 text-green-700', full: 'bg-red-100 text-red-700', closed: 'bg-slate-100 text-slate-600', emergency: 'bg-amber-100 text-amber-700' };
-  return <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[status] || colors.closed}`}>{status}</span>;
-}
-
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="p-4 border-b border-slate-200 flex items-center justify-between sticky top-0 bg-white">
-          <h3 className="font-bold text-lg">{title}</h3>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-700"><X className="w-5 h-5" /></button>
-        </div>
-        <div className="p-4">{children}</div>
-      </div>
-    </div>
-  );
-}
-
-function Input({ label, name, type = 'text', defaultValue, required, placeholder }: { label: string; name: string; type?: string; defaultValue?: any; required?: boolean; placeholder?: string }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <input type={type} name={name} defaultValue={defaultValue} required={required} placeholder={placeholder} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-    </div>
-  );
-}
-
-function Textarea({ label, name, defaultValue, placeholder, rows = 2 }: { label: string; name: string; defaultValue?: string; placeholder?: string; rows?: number }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <textarea name={name} defaultValue={defaultValue} placeholder={placeholder} rows={rows} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-    </div>
-  );
-}
-
-function Select({ label, name, defaultValue, options }: { label: string; name: string; defaultValue?: any; options: { v: string; l: string }[] }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <select name={name} defaultValue={defaultValue} className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-        {options.map(o => <option key={o.v} value={o.v}>{o.l}</option>)}
-      </select>
-    </div>
-  );
-}
-
-function Checkbox({ label, name, defaultChecked }: { label: string; name: string; defaultChecked?: boolean }) {
-  return (
-    <label className="flex items-center gap-2">
-      <input type="checkbox" name={name} defaultChecked={defaultChecked} className="w-4 h-4 text-blue-600 rounded" />
-      <span className="text-sm text-slate-700">{label}</span>
-    </label>
-  );
-}
-
-function FormButtons({ onCancel, color = 'blue', label = 'Save' }: { onCancel: () => void; color?: string; label?: string }) {
-  const colors: Record<string, string> = { blue: 'bg-blue-600 hover:bg-blue-700', green: 'bg-green-600 hover:bg-green-700', red: 'bg-red-600 hover:bg-red-700' };
-  return (
-    <div className="flex gap-2 pt-2">
-      <button type="submit" className={`flex-1 text-white py-2.5 rounded-lg font-semibold flex items-center justify-center gap-2 ${colors[color]}`}>
-        <Save className="w-4 h-4" />{label}
-      </button>
-      <button type="button" onClick={onCancel} className="px-4 py-2.5 bg-slate-200 text-slate-700 rounded-lg font-semibold">Cancel</button>
     </div>
   );
 }
