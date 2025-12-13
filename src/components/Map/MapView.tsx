@@ -2,8 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Layers, MapPin, X, Navigation, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { supabase, FloodMarker, AdminAlert } from '../../lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { calculateRoute, findNearestEvacuationCenter } from '../../lib/routingService';
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -23,7 +22,6 @@ interface MapLayer {
 }
 
 export function MapView() {
-  const { profile } = useAuth();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const [showLayerControl, setShowLayerControl] = useState(false);

@@ -12,7 +12,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<UserRole>('evacuee');
+  const [role, setRole] = useState<UserRole>('user');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -88,13 +88,13 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
             required
             minLength={6}
             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="••••••••"
+            placeholder="Min. 6 characters"
           />
         </div>
 
         <div>
           <label htmlFor="role" className="block text-sm font-medium text-slate-700 mb-1">
-            Role
+            Account Type
           </label>
           <select
             id="role"
@@ -102,9 +102,7 @@ export function RegisterForm({ onSuccess, onSwitchToLogin }: RegisterFormProps) 
             onChange={(e) => setRole(e.target.value as UserRole)}
             className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="evacuee">Evacuee</option>
-            <option value="personnel">Personnel</option>
-            <option value="vehicle_operator">Vehicle Operator</option>
+            <option value="user">User</option>
             <option value="admin">Administrator</option>
           </select>
         </div>

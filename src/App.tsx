@@ -1,16 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginForm } from './components/Auth/LoginForm';
 import { RegisterForm } from './components/Auth/RegisterForm';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { MapView } from './components/Map/MapView';
-import { RoutesView } from './components/Routes/RoutesView';
-import { EmergencyView } from './components/Emergency/EmergencyView';
 import { AdminView } from './components/Admin/AdminView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { BottomNav, NavView } from './components/BottomNav';
-import { offlineDB } from './lib/db';
-import { syncManager } from './lib/syncManager';
 
 function AuthScreen() {
   const [showRegister, setShowRegister] = useState(false);
@@ -37,27 +33,6 @@ function MainApp() {
   const [activeView, setActiveView] = useState<NavView>('dashboard');
   const isAdmin = profile?.new_role === 'admin';
 
-  useEffect(() => {
-    initializeApp();
-  }, []);
-
-  const initializeApp = async () => {
-    try {
-      await offlineDB.init();
-      console.log('IndexedDB initialized');
-
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').then(registration => {
-          console.log('Service Worker registered:', registration);
-        }).catch(error => {
-          console.log('Service Worker registration failed:', error);
-        });
-      }
-    } catch (error) {
-      console.error('App initialization error:', error);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -78,8 +53,6 @@ function MainApp() {
       <div className="flex-1 overflow-hidden">
         {activeView === 'dashboard' && <Dashboard />}
         {activeView === 'map' && <MapView />}
-        {activeView === 'routes' && <RoutesView />}
-        {activeView === 'emergency' && <EmergencyView />}
         {activeView === 'admin' && <AdminView />}
         {activeView === 'settings' && <SettingsView />}
       </div>

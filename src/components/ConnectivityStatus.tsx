@@ -1,8 +1,21 @@
-import { Wifi, WifiOff, Cloud, CloudOff } from 'lucide-react';
-import { useOnlineStatus } from '../hooks/useOnlineStatus';
+import { useState, useEffect } from 'react';
+import { Wifi, WifiOff } from 'lucide-react';
 
 export function ConnectivityStatus() {
-  const isOnline = useOnlineStatus();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   return (
     <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
@@ -21,35 +34,6 @@ export function ConnectivityStatus() {
           <span>Offline</span>
         </>
       )}
-    </div>
-  );
-}
-
-export function SyncStatus({ isSyncing }: { isSyncing: boolean }) {
-  const isOnline = useOnlineStatus();
-
-  if (!isOnline) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-slate-100 text-slate-600">
-        <CloudOff className="w-4 h-4" />
-        <span>Sync Paused</span>
-      </div>
-    );
-  }
-
-  if (isSyncing) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-blue-50 text-blue-700">
-        <Cloud className="w-4 h-4 animate-pulse" />
-        <span>Syncing...</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-green-50 text-green-700">
-      <Cloud className="w-4 h-4" />
-      <span>Synced</span>
     </div>
   );
 }
