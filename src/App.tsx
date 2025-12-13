@@ -21,7 +21,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
-  loading: true,
+  loading: false,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -34,6 +34,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -45,39 +46,33 @@ function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           if (session?.user) {
             setUser(session.user);
-            const userProfile = await getUserProfile(session.user.id);
-            if (mounted) setProfile(userProfile);
-          } else {
-            setUser(null);
-            setProfile(null);
+            getUserProfile(session.user.id).then(userProfile => {
+              if (mounted) setProfile(userProfile);
+            }).catch(console.error);
           }
           setLoading(false);
+          setInitialized(true);
         }
       } catch (error) {
         console.error('Auth init error:', error);
         if (mounted) {
-          setUser(null);
-          setProfile(null);
           setLoading(false);
+          setInitialized(true);
         }
       }
     }
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!mounted) return;
 
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        try {
-          const userProfile = await getUserProfile(session.user.id);
+        getUserProfile(session.user.id).then(userProfile => {
           if (mounted) setProfile(userProfile);
-        } catch (error) {
-          console.error('Profile fetch error:', error);
-          if (mounted) setProfile(null);
-        }
+        }).catch(console.error);
       } else {
         setProfile(null);
       }
@@ -90,9 +85,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const handleSignOut = async () => {
+    setLoading(true);
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    setLoading(false);
   };
 
   const refreshProfile = async () => {
@@ -105,6 +102,17 @@ function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
   };
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent mx-auto mb-3"></div>
+          <p className="text-slate-500 text-sm">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut: handleSignOut, refreshProfile }}>
@@ -133,26 +141,10 @@ function AuthScreen() {
   );
 }
 
-function LoadingScreen() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-4 border-white border-t-transparent mx-auto mb-4"></div>
-        <h1 className="text-white text-2xl font-bold mb-2">AGOS</h1>
-        <p className="text-blue-100">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
 function MainApp() {
-  const { user, loading, profile } = useAuth();
+  const { user, profile } = useAuth();
   const [activeView, setActiveView] = useState<NavView>('dashboard');
   const isAdmin = profile?.new_role === 'admin';
-
-  if (loading) {
-    return <LoadingScreen />;
-  }
 
   if (!user) {
     return <AuthScreen />;
