@@ -30,15 +30,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let mounted = true;
+
     const initAuth = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setUser(session?.user ?? null);
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-        if (session?.user) {
+        if (error) {
+          console.error('Error getting session:', error);
+          return;
+        }
+
+        if (mounted) {
+          setUser(session?.user ?? null);
+        }
+
+        if (session?.user && mounted) {
           try {
             const userProfile = await getUserProfile(session.user.id);
-            setProfile(userProfile);
+            if (mounted) setProfile(userProfile);
           } catch (error) {
             console.error('Error fetching profile:', error);
           }
@@ -46,19 +56,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Error getting session:', error);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
 
-    initAuth();
+    const timeout = setTimeout(() => {
+      if (mounted) {
+        console.warn('Auth initialization timed out');
+        setLoading(false);
+      }
+    }, 5000);
+
+    initAuth().finally(() => clearTimeout(timeout));
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       (async () => {
+        if (!mounted) return;
         setUser(session?.user ?? null);
         if (session?.user) {
           try {
             const userProfile = await getUserProfile(session.user.id);
-            setProfile(userProfile);
+            if (mounted) setProfile(userProfile);
           } catch (error) {
             console.error('Error fetching profile:', error);
             setProfile(null);
@@ -69,7 +87,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSignOut = async () => {
