@@ -9,10 +9,13 @@ export async function signUp(email: string, password: string, fullName: string, 
   if (authError) throw authError;
   if (!authData.user) throw new Error('Failed to create user');
 
+  const oldRole = role === 'admin' ? 'admin' : 'evacuee';
+
   const { error: profileError } = await supabase
     .from('users_profile')
     .insert({
       id: authData.user.id,
+      role: oldRole,
       new_role: role,
       full_name: fullName,
       location_permission_granted: false,
