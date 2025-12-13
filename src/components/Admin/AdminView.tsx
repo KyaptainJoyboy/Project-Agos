@@ -38,7 +38,7 @@ interface EvacuationCenter {
 const TUGUEGARAO_CENTER: [number, number] = [17.6132, 121.7270];
 
 export function AdminView() {
-  const { profile, user } = useAuth();
+  const { profile, user, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState<AdminTab>('overview');
   const [floodMarkers, setFloodMarkers] = useState<FloodMarker[]>([]);
   const [centers, setCenters] = useState<EvacuationCenter[]>([]);
@@ -60,11 +60,11 @@ export function AdminView() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markerRef = useRef<L.Marker | null>(null);
 
-  const isAdmin = profile?.new_role === 'admin';
-
   useEffect(() => {
     if (isAdmin) {
       loadAdminData();
+    } else {
+      setLoading(false);
     }
   }, [isAdmin]);
 

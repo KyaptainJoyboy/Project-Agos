@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { User, MapPin, Bell, LogOut } from 'lucide-react';
+import { User, MapPin, Bell, LogOut, Shield } from 'lucide-react';
 import { useAuth } from '../../App';
 import { updateUserProfile } from '../../lib/auth';
 
 export function SettingsView() {
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { user, profile, signOut, refreshProfile, isAdmin } = useAuth();
   const [locationPermission, setLocationPermission] = useState(profile?.location_permission_granted || false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile?.notification_enabled || false);
 
@@ -49,20 +49,29 @@ export function SettingsView() {
 
       <div className="p-4 space-y-4">
         {profile && (
-          <div className="bg-white rounded-lg p-4 border border-slate-200">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-blue-50 rounded-full">
-                <User className="w-6 h-6 text-blue-600" />
+          <div className={`rounded-lg p-4 border ${isAdmin ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-full ${isAdmin ? 'bg-amber-500/20' : 'bg-blue-50'}`}>
+                  {isAdmin ? <Shield className="w-6 h-6 text-amber-400" /> : <User className="w-6 h-6 text-blue-600" />}
+                </div>
+                <div>
+                  <h2 className={`font-semibold ${isAdmin ? 'text-white' : 'text-slate-900'}`}>{profile.full_name}</h2>
+                  <p className={`text-sm ${isAdmin ? 'text-slate-400' : 'text-slate-600'}`}>{user?.email}</p>
+                </div>
               </div>
-              <div>
-                <h2 className="font-semibold text-slate-900">{profile.full_name}</h2>
-                <p className="text-sm text-slate-600 capitalize">{profile.new_role}</p>
+              <div className={`px-3 py-1.5 rounded-full text-sm font-bold flex items-center gap-1.5 ${
+                isAdmin ? 'bg-amber-500 text-white' : 'bg-blue-100 text-blue-700'
+              }`}>
+                {isAdmin ? <Shield className="w-3.5 h-3.5" /> : <User className="w-3.5 h-3.5" />}
+                {isAdmin ? 'Admin' : 'User'}
               </div>
             </div>
-            <div className="text-sm text-slate-600">
-              <p>Email: {user?.email}</p>
-              {profile.phone_number && <p className="mt-1">Phone: {profile.phone_number}</p>}
-            </div>
+            {profile.phone_number && (
+              <div className={`text-sm ${isAdmin ? 'text-slate-400' : 'text-slate-600'}`}>
+                <p>Phone: {profile.phone_number}</p>
+              </div>
+            )}
           </div>
         )}
 

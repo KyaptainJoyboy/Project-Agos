@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Users, AlertTriangle, Bell, Cloud } from 'lucide-react';
+import { MapPin, Users, AlertTriangle, Bell, Cloud, Shield, User } from 'lucide-react';
 import { useAuth } from '../../App';
 import { supabase, AdminAlert, WeatherCondition } from '../../lib/supabase';
 import { AgosLogo } from '../Logo/AgosLogo';
@@ -22,7 +22,7 @@ interface EvacuationCenter {
 }
 
 export function Dashboard() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const [centers, setCenters] = useState<EvacuationCenter[]>([]);
   const [alerts, setAlerts] = useState<AdminAlert[]>([]);
   const [weather, setWeather] = useState<WeatherCondition | null>(null);
@@ -160,21 +160,38 @@ export function Dashboard() {
 
   return (
     <div className="pb-20 overflow-y-auto h-full">
-      <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <AgosLogo className="w-10 h-10" />
-          <div>
-            <h1 className="text-2xl font-bold">AGOS</h1>
-            <p className="text-blue-100 text-sm">Disaster Management System</p>
-            <p className="text-blue-200 text-xs">Tuguegarao City, Cagayan</p>
+      <div className={`text-white p-6 ${isAdmin ? 'bg-gradient-to-br from-slate-700 to-slate-800' : 'bg-gradient-to-br from-blue-600 to-blue-700'}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <AgosLogo className="w-10 h-10" />
+            <div>
+              <h1 className="text-2xl font-bold">AGOS</h1>
+              <p className={`text-sm ${isAdmin ? 'text-slate-300' : 'text-blue-100'}`}>Disaster Management System</p>
+              <p className={`text-xs ${isAdmin ? 'text-slate-400' : 'text-blue-200'}`}>Tuguegarao City, Cagayan</p>
+            </div>
           </div>
+          {isAdmin && (
+            <div className="bg-amber-500 text-white px-3 py-1.5 rounded-lg flex items-center gap-1.5 text-sm font-bold shadow-lg">
+              <Shield className="w-4 h-4" />
+              ADMIN
+            </div>
+          )}
         </div>
 
         {profile && (
-          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-            <p className="text-sm text-blue-100">Welcome,</p>
-            <p className="font-semibold text-lg">{profile.full_name}</p>
-            <p className="text-sm text-blue-100 capitalize">{profile.new_role}</p>
+          <div className={`backdrop-blur-sm rounded-lg p-4 border ${isAdmin ? 'bg-white/5 border-white/10' : 'bg-white/10 border-white/20'}`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className={`text-sm ${isAdmin ? 'text-slate-300' : 'text-blue-100'}`}>Welcome,</p>
+                <p className="font-semibold text-lg">{profile.full_name}</p>
+              </div>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                isAdmin ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/30 text-blue-100'
+              }`}>
+                {isAdmin ? <Shield className="w-4 h-4" /> : <User className="w-4 h-4" />}
+                {isAdmin ? 'Administrator' : 'User'}
+              </div>
+            </div>
           </div>
         )}
       </div>

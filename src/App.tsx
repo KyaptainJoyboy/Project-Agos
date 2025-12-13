@@ -14,6 +14,8 @@ interface AuthContextType {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
+  profileLoading: boolean;
+  isAdmin: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -22,6 +24,8 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   profile: null,
   loading: false,
+  profileLoading: false,
+  isAdmin: false,
   signOut: async () => {},
   refreshProfile: async () => {},
 });
@@ -34,7 +38,10 @@ function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
   const [initialized, setInitialized] = useState(false);
+
+  const isAdmin = profile?.new_role === 'admin';
 
   useEffect(() => {
     let mounted = true;
@@ -46,9 +53,15 @@ function AuthProvider({ children }: { children: ReactNode }) {
         if (mounted) {
           if (session?.user) {
             setUser(session.user);
-            getUserProfile(session.user.id).then(userProfile => {
+            setProfileLoading(true);
+            try {
+              const userProfile = await getUserProfile(session.user.id);
               if (mounted) setProfile(userProfile);
-            }).catch(console.error);
+            } catch (e) {
+              console.error('Profile fetch error:', e);
+            } finally {
+              if (mounted) setProfileLoading(false);
+            }
           }
           setLoading(false);
           setInitialized(true);
@@ -64,15 +77,21 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
     init();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!mounted) return;
 
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        getUserProfile(session.user.id).then(userProfile => {
+        setProfileLoading(true);
+        try {
+          const userProfile = await getUserProfile(session.user.id);
           if (mounted) setProfile(userProfile);
-        }).catch(console.error);
+        } catch (e) {
+          console.error('Profile fetch error:', e);
+        } finally {
+          if (mounted) setProfileLoading(false);
+        }
       } else {
         setProfile(null);
       }
@@ -94,11 +113,14 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (user) {
+      setProfileLoading(true);
       try {
         const userProfile = await getUserProfile(user.id);
         setProfile(userProfile);
       } catch (error) {
         console.error('Error refreshing profile:', error);
+      } finally {
+        setProfileLoading(false);
       }
     }
   };
@@ -115,7 +137,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut: handleSignOut, refreshProfile }}>
+    <AuthContext.Provider value={{ user, profile, loading, profileLoading, isAdmin, signOut: handleSignOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -142,12 +164,22 @@ function AuthScreen() {
 }
 
 function MainApp() {
-  const { user, profile } = useAuth();
+  const { user, profile, profileLoading, isAdmin } = useAuth();
   const [activeView, setActiveView] = useState<NavView>('dashboard');
-  const isAdmin = profile?.new_role === 'admin';
 
   if (!user) {
     return <AuthScreen />;
+  }
+
+  if (profileLoading && !profile) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent mx-auto mb-3"></div>
+          <p className="text-slate-500 text-sm">Loading profile...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
