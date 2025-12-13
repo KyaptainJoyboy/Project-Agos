@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User, MapPin, Bell, LogOut } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../App';
 import { updateUserProfile } from '../../lib/auth';
 
 export function SettingsView() {

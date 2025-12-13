@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { MapPin, Users, AlertTriangle, Bell, Cloud } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { ConnectivityStatus } from '../ConnectivityStatus';
+import { useAuth } from '../../App';
 import { supabase, AdminAlert, WeatherCondition } from '../../lib/supabase';
 import { AgosLogo } from '../Logo/AgosLogo';
 
@@ -162,16 +161,13 @@ export function Dashboard() {
   return (
     <div className="pb-20 overflow-y-auto h-full">
       <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <AgosLogo className="w-10 h-10" />
-            <div>
-              <h1 className="text-2xl font-bold">AGOS</h1>
-              <p className="text-blue-100 text-sm">Disaster Management System</p>
-              <p className="text-blue-200 text-xs">Tuguegarao City, Cagayan</p>
-            </div>
+        <div className="flex items-center gap-3 mb-4">
+          <AgosLogo className="w-10 h-10" />
+          <div>
+            <h1 className="text-2xl font-bold">AGOS</h1>
+            <p className="text-blue-100 text-sm">Disaster Management System</p>
+            <p className="text-blue-200 text-xs">Tuguegarao City, Cagayan</p>
           </div>
-          <ConnectivityStatus />
         </div>
 
         {profile && (

@@ -13,7 +13,7 @@ import {
   X,
   Activity
 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../App';
 import { supabase, FloodMarker, AdminAlert, WeatherCondition } from '../../lib/supabase';
 
 type AdminTab = 'overview' | 'floods' | 'alerts' | 'weather';
