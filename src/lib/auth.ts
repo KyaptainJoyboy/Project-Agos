@@ -1,6 +1,6 @@
 import { supabase, UserProfile, UserRole } from './supabase';
 
-export async function signUp(email: string, password: string, fullName: string, role: UserRole = 'evacuee') {
+export async function signUp(email: string, password: string, fullName: string, role: UserRole = 'user') {
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
@@ -13,7 +13,7 @@ export async function signUp(email: string, password: string, fullName: string, 
     .from('users_profile')
     .insert({
       id: authData.user.id,
-      role,
+      new_role: role,
       full_name: fullName,
       location_permission_granted: false,
       notification_enabled: true,

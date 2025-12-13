@@ -21,16 +21,55 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-export type UserRole = 'evacuee' | 'personnel' | 'vehicle_operator' | 'admin';
+export type UserRole = 'user' | 'admin';
 
 export interface UserProfile {
   id: string;
-  role: UserRole;
+  new_role: UserRole;
   full_name: string;
   phone_number?: string;
   location_permission_granted: boolean;
   notification_enabled: boolean;
   emergency_contact?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface FloodMarker {
+  id: string;
+  name: string;
+  location: { lat: number; lng: number };
+  severity: number;
+  radius_meters: number;
+  is_active: boolean;
+  description?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminAlert {
+  id: string;
+  title: string;
+  message: string;
+  alert_type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  location_name?: string;
+  location?: { lat: number; lng: number };
+  is_active: boolean;
+  created_by?: string;
+  created_at: string;
+  expires_at?: string;
+  updated_at: string;
+}
+
+export interface WeatherCondition {
+  id: string;
+  condition_type: 'normal' | 'light_rain' | 'heavy_rain' | 'storm' | 'typhoon';
+  description?: string;
+  flood_risk_level: number;
+  is_active: boolean;
+  updated_by?: string;
   created_at: string;
   updated_at: string;
 }

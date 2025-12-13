@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { User, MapPin, Bell, LogOut, Download, Trash2, Smartphone, Settings as SettingsIcon, Activity } from 'lucide-react';
+import { User, MapPin, Bell, LogOut, Download, Trash2, Smartphone } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { updateUserProfile } from '../../lib/auth';
 import { offlineDB } from '../../lib/db';
 import { usePWA } from '../../hooks/usePWA';
-import { simulationManager } from '../../lib/simulationManager';
 
 export function SettingsView() {
   const { user, profile, signOut, refreshProfile } = useAuth();
@@ -12,18 +11,9 @@ export function SettingsView() {
   const [locationPermission, setLocationPermission] = useState(profile?.location_permission_granted || false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(profile?.notification_enabled || false);
   const [cacheSize, setCacheSize] = useState<string>('Calculating...');
-  const [currentMode, setCurrentMode] = useState(simulationManager.getMode());
 
   useEffect(() => {
     calculateCacheSize();
-
-    const unsubscribe = simulationManager.subscribe(() => {
-      setCurrentMode(simulationManager.getMode());
-    });
-
-    return () => {
-      unsubscribe();
-    };
   }, []);
 
   useEffect(() => {
@@ -145,7 +135,7 @@ export function SettingsView() {
               </div>
               <div>
                 <h2 className="font-semibold text-slate-900">{profile.full_name}</h2>
-                <p className="text-sm text-slate-600 capitalize">{profile.role}</p>
+                <p className="text-sm text-slate-600 capitalize">{profile.new_role}</p>
               </div>
             </div>
             <div className="text-sm text-slate-600">
@@ -154,21 +144,6 @@ export function SettingsView() {
             </div>
           </div>
         )}
-
-        <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-lg p-4">
-          <div className="flex items-center gap-3 mb-3">
-            <Activity className="w-5 h-5" />
-            <h3 className="font-semibold">AI Simulation Mode</h3>
-          </div>
-          <p className="text-sm text-slate-300 mb-3">
-            Current mode: <span className="font-bold text-white capitalize">{currentMode.replace(/_/g, ' ')}</span>
-          </p>
-          {(profile?.role === 'admin' || profile?.role === 'personnel') && (
-            <p className="text-xs text-slate-400">
-              Access Admin Panel to change simulation settings
-            </p>
-          )}
-        </div>
 
         <div className="bg-white rounded-lg border border-slate-200 divide-y divide-slate-200">
           <div className="p-4">

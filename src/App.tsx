@@ -35,7 +35,7 @@ function AuthScreen() {
 function MainApp() {
   const { user, loading, profile } = useAuth();
   const [activeView, setActiveView] = useState<NavView>('dashboard');
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'personnel';
+  const isAdmin = profile?.new_role === 'admin';
 
   useEffect(() => {
     initializeApp();
