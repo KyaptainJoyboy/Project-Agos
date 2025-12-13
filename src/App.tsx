@@ -43,17 +43,23 @@ function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { session } } = await supabase.auth.getSession();
 
         if (mounted) {
-          setUser(session?.user ?? null);
-
           if (session?.user) {
+            setUser(session.user);
             const userProfile = await getUserProfile(session.user.id);
             if (mounted) setProfile(userProfile);
+          } else {
+            setUser(null);
+            setProfile(null);
           }
+          setLoading(false);
         }
       } catch (error) {
         console.error('Auth init error:', error);
-      } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+        }
       }
     }
 

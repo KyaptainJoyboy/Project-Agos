@@ -1,4 +1,5 @@
 import { supabase, UserProfile, UserRole } from './supabase';
+import { saveAccount } from './storedAccounts';
 
 export async function signUp(email: string, password: string, fullName: string, role: UserRole = 'user') {
   const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -24,6 +25,8 @@ export async function signUp(email: string, password: string, fullName: string, 
 
   if (profileError) throw profileError;
 
+  saveAccount(email, fullName);
+
   return authData;
 }
 
@@ -34,6 +37,14 @@ export async function signIn(email: string, password: string) {
   });
 
   if (error) throw error;
+
+  if (data.user) {
+    const profile = await getUserProfile(data.user.id);
+    if (profile) {
+      saveAccount(email, profile.full_name);
+    }
+  }
+
   return data;
 }
 
