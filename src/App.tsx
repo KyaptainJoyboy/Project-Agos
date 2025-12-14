@@ -167,6 +167,12 @@ function MainApp() {
   const { user, profile, profileLoading, isAdmin } = useAuth();
   const [activeView, setActiveView] = useState<NavView>('dashboard');
 
+  useEffect(() => {
+    if (profile && isAdmin) {
+      setActiveView('admin');
+    }
+  }, [profile, isAdmin]);
+
   if (!user) {
     return <AuthScreen />;
   }
