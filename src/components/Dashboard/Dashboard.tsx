@@ -40,6 +40,33 @@ function UserDashboard({ profile }: { profile: any }) {
 
   useEffect(() => {
     loadData();
+
+    const alertsChannel = supabase
+      .channel('user_alerts_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_alerts' }, () => {
+        loadAlerts();
+      })
+      .subscribe();
+
+    const weatherChannel = supabase
+      .channel('user_weather_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'weather_conditions' }, () => {
+        loadWeather();
+      })
+      .subscribe();
+
+    const centersChannel = supabase
+      .channel('user_centers_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evacuation_centers' }, () => {
+        loadCenters();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(alertsChannel);
+      supabase.removeChannel(weatherChannel);
+      supabase.removeChannel(centersChannel);
+    };
   }, []);
 
   const loadData = async () => {
@@ -275,6 +302,43 @@ function AdminDashboard({ profile }: { profile: any }) {
 
   useEffect(() => {
     loadData();
+
+    const alertsChannel = supabase
+      .channel('admin_dash_alerts_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_alerts' }, () => {
+        loadAlerts();
+        loadStats();
+      })
+      .subscribe();
+
+    const weatherChannel = supabase
+      .channel('admin_dash_weather_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'weather_conditions' }, () => {
+        loadWeather();
+      })
+      .subscribe();
+
+    const centersChannel = supabase
+      .channel('admin_dash_centers_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evacuation_centers' }, () => {
+        loadCenters();
+        loadStats();
+      })
+      .subscribe();
+
+    const floodsChannel = supabase
+      .channel('admin_dash_floods_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'flood_markers' }, () => {
+        loadStats();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(alertsChannel);
+      supabase.removeChannel(weatherChannel);
+      supabase.removeChannel(centersChannel);
+      supabase.removeChannel(floodsChannel);
+    };
   }, []);
 
   const loadData = async () => {
