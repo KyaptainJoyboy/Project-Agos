@@ -1,4 +1,4 @@
-import { Map, Settings, Home, Shield, User } from 'lucide-react';
+import { Map, Settings, Home, Shield } from 'lucide-react';
 
 export type NavView = 'dashboard' | 'map' | 'admin' | 'settings';
 

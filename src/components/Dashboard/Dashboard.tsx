@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Users, AlertTriangle, Bell, Cloud, Shield, User, Map, Navigation } from 'lucide-react';
+import { MapPin, Users, AlertTriangle, Bell, Cloud, Shield, Map, Navigation } from 'lucide-react';
 import { useAuth } from '../../App';
 import { supabase, AdminAlert, WeatherCondition } from '../../lib/supabase';
 import { AgosLogo } from '../Logo/AgosLogo';
@@ -334,11 +334,10 @@ function AdminDashboard({ profile }: { profile: any }) {
   };
 
   const loadStats = async () => {
-    const [centersResult, alertsResult, floodsResult, usersResult] = await Promise.all([
+    const [centersResult, alertsResult, floodsResult] = await Promise.all([
       supabase.from('evacuation_centers').select('*', { count: 'exact' }),
       supabase.from('admin_alerts').select('*', { count: 'exact' }).eq('is_active', true),
-      supabase.from('flood_markers').select('*', { count: 'exact' }).eq('is_active', true),
-      supabase.from('users_profile').select('id', { count: 'exact', head: true })
+      supabase.from('flood_markers').select('*', { count: 'exact' }).eq('is_active', true)
     ]);
 
     const operationalCenters = centersResult.data?.filter(c => c.status === 'operational').length || 0;
