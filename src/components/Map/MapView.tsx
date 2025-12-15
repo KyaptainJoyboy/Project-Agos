@@ -107,35 +107,11 @@ export function MapView() {
 
     loadMapData();
 
-    const centersChannel = supabase
-      .channel('map_centers_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'evacuation_centers' }, () => {
-        loadEvacuationCenters();
-      })
-      .subscribe();
-
-    const floodsChannel = supabase
-      .channel('map_floods_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'flood_markers' }, () => {
-        loadFloodMarkers();
-      })
-      .subscribe();
-
-    const alertsChannel = supabase
-      .channel('map_alerts_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_alerts' }, () => {
-        loadAlerts();
-      })
-      .subscribe();
-
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;
       }
-      supabase.removeChannel(centersChannel);
-      supabase.removeChannel(floodsChannel);
-      supabase.removeChannel(alertsChannel);
     };
   }, [handleMapClick]);
 

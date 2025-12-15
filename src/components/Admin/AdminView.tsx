@@ -120,44 +120,6 @@ export function AdminView() {
   useEffect(() => {
     if (isAdmin) {
       loadAdminData();
-
-      const centersChannel = supabase
-        .channel('admin_centers_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'evacuation_centers' }, () => {
-          loadCenters();
-          loadStats();
-        })
-        .subscribe();
-
-      const floodsChannel = supabase
-        .channel('admin_floods_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'flood_markers' }, () => {
-          loadFloodMarkers();
-          loadStats();
-        })
-        .subscribe();
-
-      const alertsChannel = supabase
-        .channel('admin_alerts_changes_panel')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_alerts' }, () => {
-          loadAlerts();
-          loadStats();
-        })
-        .subscribe();
-
-      const weatherChannel = supabase
-        .channel('admin_weather_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'weather_conditions' }, () => {
-          loadWeather();
-        })
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(centersChannel);
-        supabase.removeChannel(floodsChannel);
-        supabase.removeChannel(alertsChannel);
-        supabase.removeChannel(weatherChannel);
-      };
     } else {
       setLoading(false);
     }
@@ -260,7 +222,8 @@ export function AdminView() {
     const { data, error } = await supabase
       .from('flood_markers')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(20);
 
     if (error) return;
 
@@ -294,7 +257,8 @@ export function AdminView() {
     const { data, error } = await supabase
       .from('admin_alerts')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(20);
 
     if (error) return;
 
