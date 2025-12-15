@@ -602,8 +602,39 @@ export function AdminView() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent"></div>
+      <div className="flex flex-col h-full pb-16 overflow-hidden bg-slate-50">
+        <div className="bg-gradient-to-br from-slate-800 to-slate-900 text-white p-4 flex-shrink-0 animate-pulse">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="h-5 bg-white/10 rounded w-32 mb-2"></div>
+              <div className="h-4 bg-white/10 rounded w-48"></div>
+            </div>
+            <div className="h-10 w-10 bg-white/10 rounded-full"></div>
+          </div>
+        </div>
+
+        <div className="p-4 overflow-y-auto">
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="bg-white rounded-xl p-3 shadow-md border border-slate-200 animate-pulse">
+                <div className="h-4 bg-slate-200 rounded w-20 mb-2"></div>
+                <div className="h-6 bg-slate-100 rounded w-12"></div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl p-4 shadow-md border border-slate-200 animate-pulse">
+                <div className="h-5 bg-slate-200 rounded w-40 mb-3"></div>
+                <div className="space-y-2">
+                  <div className="h-4 bg-slate-100 rounded"></div>
+                  <div className="h-4 bg-slate-100 rounded w-3/4"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

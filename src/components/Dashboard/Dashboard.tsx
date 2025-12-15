@@ -143,10 +143,27 @@ function UserDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (vi
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading...</p>
+      <div className="pb-20 overflow-y-auto h-full bg-gradient-to-b from-blue-50 to-slate-50">
+        <div className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-6 pb-8 animate-pulse">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 bg-white/20 rounded-full"></div>
+            <div>
+              <div className="h-4 bg-white/20 rounded w-32 mb-2"></div>
+              <div className="h-6 bg-white/20 rounded w-48"></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 -mt-4 space-y-5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-xl p-5 shadow-md border border-slate-200 animate-pulse">
+              <div className="h-6 bg-slate-200 rounded w-40 mb-4"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-slate-100 rounded"></div>
+                <div className="h-4 bg-slate-100 rounded w-5/6"></div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -428,10 +445,40 @@ function AdminDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (v
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600 mx-auto mb-4"></div>
-          <p className="text-slate-600">Loading control panel...</p>
+      <div className="pb-20 overflow-y-auto h-full bg-slate-900">
+        <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-black text-white p-6 pb-8 border-b-4 border-amber-500 animate-pulse">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-white/10 rounded-full"></div>
+              <div>
+                <div className="h-4 bg-white/10 rounded w-32 mb-2"></div>
+                <div className="h-6 bg-white/10 rounded w-48"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-slate-800 rounded-xl p-4 shadow-md border border-slate-700 animate-pulse">
+                <div className="h-4 bg-slate-700 rounded w-16 mb-2"></div>
+                <div className="h-8 bg-slate-600 rounded w-12"></div>
+              </div>
+            ))}
+          </div>
+
+          <div className="space-y-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="bg-slate-800 rounded-xl p-5 shadow-md border border-slate-700 animate-pulse">
+                <div className="h-6 bg-slate-700 rounded w-40 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-slate-600 rounded"></div>
+                  <div className="h-4 bg-slate-600 rounded w-4/5"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
