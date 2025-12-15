@@ -150,7 +150,7 @@ function AuthScreen() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4">
       {showRegister ? (
         <RegisterForm
-          onSuccess={() => setShowRegister(false)}
+          onSuccess={() => {}}
           onSwitchToLogin={() => setShowRegister(false)}
         />
       ) : (
@@ -165,13 +165,17 @@ function AuthScreen() {
 
 function MainApp() {
   const { user, profile, profileLoading, isAdmin } = useAuth();
-  const [activeView, setActiveView] = useState<NavView>('dashboard');
+  const [activeView, setActiveView] = useState<NavView>(() => {
+    return 'dashboard';
+  });
 
   useEffect(() => {
-    if (profile && isAdmin) {
-      setActiveView('admin');
+    if (profile) {
+      if (isAdmin && activeView !== 'admin') {
+        setActiveView('admin');
+      }
     }
-  }, [profile, isAdmin]);
+  }, [profile, isAdmin, activeView]);
 
   if (!user) {
     return <AuthScreen />;
