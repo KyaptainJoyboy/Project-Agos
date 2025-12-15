@@ -21,17 +21,21 @@ interface EvacuationCenter {
   status: string;
 }
 
-export function Dashboard() {
+interface DashboardProps {
+  onNavigate?: (view: string) => void;
+}
+
+export function Dashboard({ onNavigate }: DashboardProps) {
   const { profile, isAdmin } = useAuth();
 
   if (isAdmin) {
-    return <AdminDashboard profile={profile} />;
+    return <AdminDashboard profile={profile} onNavigate={onNavigate} />;
   }
 
-  return <UserDashboard profile={profile} />;
+  return <UserDashboard profile={profile} onNavigate={onNavigate} />;
 }
 
-function UserDashboard({ profile }: { profile: any }) {
+function UserDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (view: string) => void }) {
   const [centers, setCenters] = useState<EvacuationCenter[]>([]);
   const [alerts, setAlerts] = useState<AdminAlert[]>([]);
   const [weather, setWeather] = useState<WeatherCondition | null>(null);
@@ -258,11 +262,17 @@ function UserDashboard({ profile }: { profile: any }) {
         <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200">
           <h2 className="font-bold text-lg text-slate-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
-            <button className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow-md flex flex-col items-center gap-2">
+            <button
+              onClick={() => onNavigate?.('map')}
+              className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow-md flex flex-col items-center gap-2 hover:from-blue-600 hover:to-blue-700 transition-colors active:scale-95"
+            >
               <MapPin className="w-8 h-8" />
               <span className="font-semibold text-sm">View Map</span>
             </button>
-            <button className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-xl shadow-md flex flex-col items-center gap-2">
+            <button
+              onClick={() => onNavigate?.('map')}
+              className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-xl shadow-md flex flex-col items-center gap-2 hover:from-green-600 hover:to-green-700 transition-colors active:scale-95"
+            >
               <Navigation className="w-8 h-8" />
               <span className="font-semibold text-sm">Find Route</span>
             </button>
@@ -287,7 +297,7 @@ function UserDashboard({ profile }: { profile: any }) {
   );
 }
 
-function AdminDashboard({ profile }: { profile: any }) {
+function AdminDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (view: string) => void }) {
   const [centers, setCenters] = useState<EvacuationCenter[]>([]);
   const [alerts, setAlerts] = useState<AdminAlert[]>([]);
   const [weather, setWeather] = useState<WeatherCondition | null>(null);
@@ -574,14 +584,20 @@ function AdminDashboard({ profile }: { profile: any }) {
         <div className="bg-gradient-to-br from-amber-600 to-amber-700 rounded-xl p-5 text-white">
           <h3 className="font-bold mb-3">Quick Admin Actions</h3>
           <div className="grid grid-cols-2 gap-2">
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
+            <button
+              onClick={() => onNavigate?.('admin')}
+              className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center hover:bg-white/30 transition-colors active:scale-95"
+            >
               <Shield className="w-6 h-6 mx-auto mb-1" />
               <p className="text-xs font-medium">Manage System</p>
-            </div>
-            <div className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center">
+            </button>
+            <button
+              onClick={() => onNavigate?.('map')}
+              className="bg-white/20 backdrop-blur-sm rounded-lg p-3 text-center hover:bg-white/30 transition-colors active:scale-95"
+            >
               <Map className="w-6 h-6 mx-auto mb-1" />
               <p className="text-xs font-medium">View Map</p>
-            </div>
+            </button>
           </div>
         </div>
       </div>

@@ -9,6 +9,7 @@ import { MapView } from './components/Map/MapView';
 import { AdminView } from './components/Admin/AdminView';
 import { SettingsView } from './components/Settings/SettingsView';
 import { BottomNav, NavView } from './components/BottomNav';
+import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 
 interface AuthContextType {
   user: User | null;
@@ -195,7 +196,7 @@ function MainApp() {
   return (
     <div className="h-screen flex flex-col bg-slate-50 overflow-hidden">
       <div className="flex-1 overflow-hidden">
-        {activeView === 'dashboard' && <Dashboard />}
+        {activeView === 'dashboard' && <Dashboard onNavigate={setActiveView} />}
         {activeView === 'map' && <MapView />}
         {activeView === 'admin' && <AdminView />}
         {activeView === 'settings' && <SettingsView />}
@@ -211,8 +212,10 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

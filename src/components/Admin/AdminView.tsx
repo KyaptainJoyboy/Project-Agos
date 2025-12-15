@@ -29,6 +29,7 @@ import {
   QuickAction,
   StatusBadge
 } from './AdminComponents';
+import { Toast, useToast } from '../Toast/Toast';
 
 type AdminTab = 'overview' | 'centers' | 'floods' | 'alerts' | 'weather';
 
@@ -102,6 +103,8 @@ export function AdminView() {
   const [stats, setStats] = useState({ users: 0, centers: 0, activeFloodMarkers: 0, activeAlerts: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [operationLoading, setOperationLoading] = useState(false);
+  const { toast, showToast, closeToast } = useToast();
 
   const [showFloodForm, setShowFloodForm] = useState(false);
   const [showAlertForm, setShowAlertForm] = useState(false);
@@ -166,10 +169,18 @@ export function AdminView() {
     }
 
     return () => {
-      if (!showFloodForm && !showCenterForm && mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-        markerRef.current = null;
+      if (mapRef.current) {
+        try {
+          if (markerRef.current) {
+            mapRef.current.removeLayer(markerRef.current);
+            markerRef.current = null;
+          }
+          mapRef.current.off();
+          mapRef.current.remove();
+          mapRef.current = null;
+        } catch (error) {
+          console.error('Error cleaning up map:', error);
+        }
       }
     };
   }, [showFloodForm, showCenterForm]);
@@ -324,155 +335,259 @@ export function AdminView() {
 
   const handleSaveFloodMarker = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    setOperationLoading(true);
 
-    const lat = selectedLocation?.lat || parseFloat(formData.get('lat') as string);
-    const lng = selectedLocation?.lng || parseFloat(formData.get('lng') as string);
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    const markerData = {
-      name: formData.get('name') as string,
-      location: `POINT(${lng} ${lat})`,
-      severity: parseInt(formData.get('severity') as string),
-      radius_meters: parseFloat(formData.get('radius') as string),
-      is_active: formData.get('is_active') === 'on',
-      description: formData.get('description') as string,
-      created_by: user?.id
-    };
+      const lat = selectedLocation?.lat || parseFloat(formData.get('lat') as string);
+      const lng = selectedLocation?.lng || parseFloat(formData.get('lng') as string);
 
-    if (editingFlood) {
-      const { error } = await supabase.from('flood_markers').update(markerData).eq('id', editingFlood.id);
-      if (error) { alert('Error: ' + error.message); return; }
-    } else {
-      const { error } = await supabase.from('flood_markers').insert([markerData]);
-      if (error) { alert('Error: ' + error.message); return; }
+      const markerData = {
+        name: formData.get('name') as string,
+        location: `POINT(${lng} ${lat})`,
+        severity: parseInt(formData.get('severity') as string),
+        radius_meters: parseFloat(formData.get('radius') as string),
+        is_active: formData.get('is_active') === 'on',
+        description: formData.get('description') as string,
+        created_by: user?.id
+      };
+
+      if (editingFlood) {
+        const { error } = await supabase.from('flood_markers').update(markerData).eq('id', editingFlood.id);
+        if (error) throw error;
+        showToast('Flood zone updated successfully', 'success');
+      } else {
+        const { error } = await supabase.from('flood_markers').insert([markerData]);
+        if (error) throw error;
+        showToast('Flood zone created successfully', 'success');
+      }
+
+      closeFloodForm();
+      loadFloodMarkers();
+      loadStats();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to save flood zone', 'error');
+    } finally {
+      setOperationLoading(false);
     }
-
-    closeFloodForm();
-    loadFloodMarkers();
-    loadStats();
   };
 
   const handleSaveCenter = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    setOperationLoading(true);
 
-    const lat = selectedLocation?.lat || parseFloat(formData.get('lat') as string);
-    const lng = selectedLocation?.lng || parseFloat(formData.get('lng') as string);
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    const centerData = {
-      name: formData.get('name') as string,
-      address: formData.get('address') as string,
-      location: `POINT(${lng} ${lat})`,
-      capacity_max: parseInt(formData.get('capacity_max') as string),
-      capacity_current: parseInt(formData.get('capacity_current') as string) || 0,
-      status: formData.get('status') as string,
-      contact_person: formData.get('contact_person') as string || null,
-      contact_number: formData.get('contact_number') as string || null
-    };
+      const lat = selectedLocation?.lat || parseFloat(formData.get('lat') as string);
+      const lng = selectedLocation?.lng || parseFloat(formData.get('lng') as string);
 
-    if (editingCenter) {
-      const { error } = await supabase.from('evacuation_centers').update(centerData).eq('id', editingCenter.id);
-      if (error) { alert('Error: ' + error.message); return; }
-    } else {
-      const { error } = await supabase.from('evacuation_centers').insert([centerData]);
-      if (error) { alert('Error: ' + error.message); return; }
+      const centerData = {
+        name: formData.get('name') as string,
+        address: formData.get('address') as string,
+        location: `POINT(${lng} ${lat})`,
+        capacity_max: parseInt(formData.get('capacity_max') as string),
+        capacity_current: parseInt(formData.get('capacity_current') as string) || 0,
+        status: formData.get('status') as string,
+        contact_person: formData.get('contact_person') as string || null,
+        contact_number: formData.get('contact_number') as string || null
+      };
+
+      if (editingCenter) {
+        const { error } = await supabase.from('evacuation_centers').update(centerData).eq('id', editingCenter.id);
+        if (error) throw error;
+        showToast('Evacuation center updated successfully', 'success');
+      } else {
+        const { error } = await supabase.from('evacuation_centers').insert([centerData]);
+        if (error) throw error;
+        showToast('Evacuation center created successfully', 'success');
+      }
+
+      closeCenterForm();
+      loadCenters();
+      loadStats();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to save evacuation center', 'error');
+    } finally {
+      setOperationLoading(false);
     }
-
-    closeCenterForm();
-    loadCenters();
-    loadStats();
   };
 
   const handleDeleteFloodMarker = async (id: string) => {
     if (!confirm('Delete this flood zone?')) return;
-    await supabase.from('flood_markers').delete().eq('id', id);
-    loadFloodMarkers();
-    loadStats();
+    setOperationLoading(true);
+    try {
+      const { error } = await supabase.from('flood_markers').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Flood zone deleted successfully', 'success');
+      loadFloodMarkers();
+      loadStats();
+    } catch (error) {
+      showToast('Failed to delete flood zone', 'error');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
   const handleDeleteCenter = async (id: string) => {
     if (!confirm('Delete this evacuation center?')) return;
-    await supabase.from('evacuation_centers').delete().eq('id', id);
-    loadCenters();
-    loadStats();
+    setOperationLoading(true);
+    try {
+      const { error } = await supabase.from('evacuation_centers').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Evacuation center deleted successfully', 'success');
+      loadCenters();
+      loadStats();
+    } catch (error) {
+      showToast('Failed to delete evacuation center', 'error');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
   const handleToggleFloodMarker = async (id: string, currentState: boolean) => {
-    await supabase.from('flood_markers').update({ is_active: !currentState }).eq('id', id);
-    loadFloodMarkers();
-    loadStats();
+    setOperationLoading(true);
+    try {
+      const { error } = await supabase.from('flood_markers').update({ is_active: !currentState }).eq('id', id);
+      if (error) throw error;
+      showToast(`Flood zone ${!currentState ? 'activated' : 'deactivated'}`, 'success');
+      loadFloodMarkers();
+      loadStats();
+    } catch (error) {
+      showToast('Failed to update flood zone', 'error');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
   const handleSaveAlert = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+    setOperationLoading(true);
 
-    const alertData: any = {
-      title: formData.get('title') as string,
-      message: formData.get('message') as string,
-      alert_type: formData.get('alert_type') as string,
-      severity: formData.get('severity') as string,
-      is_active: true,
-      created_by: user?.id
-    };
+    try {
+      const formData = new FormData(e.currentTarget);
 
-    const locationName = formData.get('location_name') as string;
-    if (locationName) alertData.location_name = locationName;
+      const alertData: any = {
+        title: formData.get('title') as string,
+        message: formData.get('message') as string,
+        alert_type: formData.get('alert_type') as string,
+        severity: formData.get('severity') as string,
+        is_active: true,
+        created_by: user?.id
+      };
 
-    const { error } = await supabase.from('admin_alerts').insert([alertData]);
-    if (error) { alert('Error: ' + error.message); return; }
+      const locationName = formData.get('location_name') as string;
+      if (locationName) alertData.location_name = locationName;
 
-    setShowAlertForm(false);
-    loadAlerts();
-    loadStats();
+      const { error } = await supabase.from('admin_alerts').insert([alertData]);
+      if (error) throw error;
+
+      showToast('Alert sent successfully', 'success');
+      setShowAlertForm(false);
+      loadAlerts();
+      loadStats();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Failed to send alert', 'error');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
   const handleDeleteAlert = async (id: string) => {
     if (!confirm('Delete this alert?')) return;
-    await supabase.from('admin_alerts').delete().eq('id', id);
-    loadAlerts();
-    loadStats();
+    setOperationLoading(true);
+    try {
+      const { error } = await supabase.from('admin_alerts').delete().eq('id', id);
+      if (error) throw error;
+      showToast('Alert deleted successfully', 'success');
+      loadAlerts();
+      loadStats();
+    } catch (error) {
+      showToast('Failed to delete alert', 'error');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
   const handleToggleAlert = async (id: string, currentState: boolean) => {
-    await supabase.from('admin_alerts').update({ is_active: !currentState }).eq('id', id);
-    loadAlerts();
-    loadStats();
+    setOperationLoading(true);
+    try {
+      const { error } = await supabase.from('admin_alerts').update({ is_active: !currentState }).eq('id', id);
+      if (error) throw error;
+      showToast(`Alert ${!currentState ? 'activated' : 'deactivated'}`, 'success');
+      loadAlerts();
+      loadStats();
+    } catch (error) {
+      showToast('Failed to update alert', 'error');
+    } finally {
+      setOperationLoading(false);
+    }
   };
 
   const handleUpdateWeather = async (condition: string) => {
-    if (weather) {
-      await supabase.from('weather_conditions').update({ is_active: false }).eq('id', weather.id);
+    setOperationLoading(true);
+    try {
+      await supabase.from('weather_conditions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+      const floodRiskMap: Record<string, number> = {
+        'normal': 1, 'light_rain': 2, 'heavy_rain': 3, 'storm': 4, 'typhoon': 5
+      };
+
+      const { error } = await supabase.from('weather_conditions').insert([{
+        condition_type: condition,
+        flood_risk_level: floodRiskMap[condition] || 1,
+        is_active: true,
+        updated_by: user?.id
+      }]);
+
+      if (error) throw error;
+
+      showToast('Weather condition updated successfully', 'success');
+      loadWeather();
+    } catch (error) {
+      showToast('Failed to update weather condition', 'error');
+    } finally {
+      setOperationLoading(false);
     }
-
-    const floodRiskMap: Record<string, number> = {
-      'normal': 1, 'light_rain': 2, 'heavy_rain': 3, 'storm': 4, 'typhoon': 5
-    };
-
-    await supabase.from('weather_conditions').insert([{
-      condition_type: condition,
-      flood_risk_level: floodRiskMap[condition] || 1,
-      is_active: true,
-      updated_by: user?.id
-    }]);
-
-    loadWeather();
   };
 
   const closeFloodForm = () => {
+    if (mapRef.current) {
+      try {
+        if (markerRef.current) {
+          mapRef.current.removeLayer(markerRef.current);
+        }
+        mapRef.current.off();
+        mapRef.current.remove();
+      } catch (error) {
+        console.error('Error cleaning up map:', error);
+      }
+      mapRef.current = null;
+      markerRef.current = null;
+    }
     setShowFloodForm(false);
     setEditingFlood(null);
     setSelectedLocation(null);
-    if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-    markerRef.current = null;
   };
 
   const closeCenterForm = () => {
+    if (mapRef.current) {
+      try {
+        if (markerRef.current) {
+          mapRef.current.removeLayer(markerRef.current);
+        }
+        mapRef.current.off();
+        mapRef.current.remove();
+      } catch (error) {
+        console.error('Error cleaning up map:', error);
+      }
+      mapRef.current = null;
+      markerRef.current = null;
+    }
     setShowCenterForm(false);
     setEditingCenter(null);
     setSelectedLocation(null);
-    if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-    markerRef.current = null;
   };
 
   if (!isAdmin) {
@@ -858,6 +973,8 @@ export function AdminView() {
           </form>
         </Modal>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={closeToast} />}
     </div>
   );
 }
