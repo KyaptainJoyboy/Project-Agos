@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { MapPin, Users, AlertTriangle, Bell, Cloud, Shield, Map, Navigation } from 'lucide-react';
+import { MapPin, Users, AlertTriangle, Bell, Cloud, Shield, Map, Navigation, Phone } from 'lucide-react';
 import { useAuth } from '../../App';
 import { supabase, AdminAlert, WeatherCondition } from '../../lib/supabase';
 import { AgosLogo } from '../Logo/AgosLogo';
@@ -162,6 +162,39 @@ function UserDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (vi
       </div>
 
       <div className="px-4 -mt-4 space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => {
+              const confirmed = confirm('Call Emergency Hotline?\n\nNDRRMC: 911\nTuguegarao CDRRMO: (078) 844-1621');
+              if (confirmed) {
+                window.location.href = 'tel:911';
+              }
+            }}
+            className="bg-gradient-to-br from-red-600 to-red-700 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center gap-3 hover:from-red-700 hover:to-red-800 transition-all active:scale-95 border-2 border-red-500"
+          >
+            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center animate-pulse">
+              <Phone className="w-8 h-8 text-red-600" />
+            </div>
+            <div className="text-center">
+              <span className="font-bold text-lg block">SOS</span>
+              <span className="text-xs text-red-100">Emergency Help</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onNavigate?.('map')}
+            className="bg-gradient-to-br from-blue-600 to-blue-700 text-white p-6 rounded-2xl shadow-xl flex flex-col items-center justify-center gap-3 hover:from-blue-700 hover:to-blue-800 transition-all active:scale-95 border-2 border-blue-500"
+          >
+            <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center">
+              <Navigation className="w-8 h-8 text-blue-600" />
+            </div>
+            <div className="text-center">
+              <span className="font-bold text-lg block">Routes</span>
+              <span className="text-xs text-blue-100">Find Safe Path</span>
+            </div>
+          </button>
+        </div>
+
         {weather && (
           <div className={`rounded-xl p-5 shadow-lg border-2 ${
             weather.flood_risk_level >= 4 ? 'bg-red-50 border-red-500' :
@@ -248,26 +281,6 @@ function UserDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (vi
             </div>
           </div>
         )}
-
-        <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200">
-          <h2 className="font-bold text-lg text-slate-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => onNavigate?.('map')}
-              className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-xl shadow-md flex flex-col items-center gap-2 hover:from-blue-600 hover:to-blue-700 transition-colors active:scale-95"
-            >
-              <MapPin className="w-8 h-8" />
-              <span className="font-semibold text-sm">View Map</span>
-            </button>
-            <button
-              onClick={() => onNavigate?.('map')}
-              className="bg-gradient-to-br from-green-500 to-green-600 text-white p-4 rounded-xl shadow-md flex flex-col items-center gap-2 hover:from-green-600 hover:to-green-700 transition-colors active:scale-95"
-            >
-              <Navigation className="w-8 h-8" />
-              <span className="font-semibold text-sm">Find Route</span>
-            </button>
-          </div>
-        </div>
 
         {centers.length > 0 && (
           <div className="bg-white rounded-xl p-5 shadow-md border border-slate-200">
