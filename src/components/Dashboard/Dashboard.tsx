@@ -22,7 +22,7 @@ interface EvacuationCenter {
 }
 
 interface DashboardProps {
-  onNavigate?: (view: string) => void;
+  onNavigate?: (view: 'dashboard' | 'map' | 'admin' | 'settings') => void;
 }
 
 export function Dashboard({ onNavigate }: DashboardProps) {
@@ -35,7 +35,7 @@ export function Dashboard({ onNavigate }: DashboardProps) {
   return <UserDashboard profile={profile} onNavigate={onNavigate} />;
 }
 
-function UserDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (view: string) => void }) {
+function UserDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (view: 'dashboard' | 'map' | 'admin' | 'settings') => void }) {
   const [centers, setCenters] = useState<EvacuationCenter[]>([]);
   const [alerts, setAlerts] = useState<AdminAlert[]>([]);
   const [weather, setWeather] = useState<WeatherCondition | null>(null);
@@ -314,7 +314,7 @@ function UserDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (vi
   );
 }
 
-function AdminDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (view: string) => void }) {
+function AdminDashboard({ profile, onNavigate }: { profile: any; onNavigate?: (view: 'dashboard' | 'map' | 'admin' | 'settings') => void }) {
   const [centers, setCenters] = useState<EvacuationCenter[]>([]);
   const [alerts, setAlerts] = useState<AdminAlert[]>([]);
   const [weather, setWeather] = useState<WeatherCondition | null>(null);

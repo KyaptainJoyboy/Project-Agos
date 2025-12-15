@@ -103,7 +103,7 @@ export function AdminView() {
   const [stats, setStats] = useState({ users: 0, centers: 0, activeFloodMarkers: 0, activeAlerts: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [operationLoading, setOperationLoading] = useState(false);
+  const [, setOperationLoading] = useState(false);
   const { toast, showToast, closeToast } = useToast();
 
   const [showFloodForm, setShowFloodForm] = useState(false);
