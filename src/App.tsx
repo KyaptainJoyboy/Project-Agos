@@ -166,17 +166,7 @@ function AuthScreen() {
 
 function MainApp() {
   const { user, profile, profileLoading, isAdmin } = useAuth();
-  const [activeView, setActiveView] = useState<NavView>(() => {
-    return 'dashboard';
-  });
-
-  useEffect(() => {
-    if (profile) {
-      if (isAdmin && activeView !== 'admin') {
-        setActiveView('admin');
-      }
-    }
-  }, [profile, isAdmin, activeView]);
+  const [activeView, setActiveView] = useState<NavView>('dashboard');
 
   if (!user) {
     return <AuthScreen />;
